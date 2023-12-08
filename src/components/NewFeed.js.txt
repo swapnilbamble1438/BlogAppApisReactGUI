@@ -1,0 +1,109 @@
+import React, { useEffect, useState } from 'react'
+import { loadAllPosts } from '../services/PostService'
+import {Row,Col, Pagination, PaginationItem, PaginationLink, Container} from 'reactstrap'
+import Post from './Post';
+import { toast } from 'react-toastify'
+
+const NewFeed=() =>{
+
+    const[posts,setPosts] = useState({
+        content:[]
+    });
+
+    const[postsDetails,setPostsDetails] = useState({
+        totalPages:'',
+        totalElements:'',
+        pageSize:'',
+        lastPage:false,
+        pageNo:''
+    })
+
+    useEffect(()=>{
+        //load all the posts from server
+       
+            loadPosts(0,2);
+        
+
+    },[])
+
+    const loadPosts=(pageNo,pageSize)=>{
+  
+        loadAllPosts(pageNo,pageSize).then(response=>{
+            setPosts(response);
+            setPostsDetails({
+                totalPages:response?.totalPages,
+                totalElements:response?.totalElements,
+                pageSize:response?.pageSize,
+                lastPage:response?.lastPage,
+                pageNo:response?.pageNo
+            });
+
+            window.scroll(0,0);
+        }).catch(error=>{
+            
+            toast.error("Failed to load posts");
+        });
+    }
+
+    const changePage=(pageNo,pageSize,pageNum)=>{
+
+        if(pageNo > postsDetails?.pageNo  && postsDetails?.lastPage  ||
+            pageNo < postsDetails?.pageNo && postsDetails.pageNo == 0 )
+        {
+           return;
+        }
+        else{
+            loadPosts(pageNo,pageSize);
+        }  
+    }
+
+
+
+  return (
+        <div className="container-fluid">
+            <Row>
+                <Col md={{ size:10,offset:1}}>
+                    <h1> Blogs Count ({postsDetails?.totalElements}) </h1>
+
+                    {
+                        posts.content.map(
+                            (post)=>(
+                            <Post post={post} key={post.postId}/>
+                           )
+                        )
+                    }
+
+                    <Container className='mt-3'>
+                    <Pagination size='lg'>
+                        <PaginationItem onClick={()=>changePage((postsDetails.pageNo)-1,2)} disabled={postsDetails?.pageNo == 0}>
+                            <PaginationLink
+                            previous>
+                                Previous
+                                </PaginationLink>
+                        </PaginationItem>
+                        {
+                            [...Array(postsDetails?.totalPages)].map((item,index)=>(
+                            <PaginationItem onClick={()=>changePage(index,2)} active={index == postsDetails?.pageNo} key={index}>
+                                <PaginationLink>
+                                  {index+1}
+                                </PaginationLink>
+                            </PaginationItem>
+
+                            ))
+                     }
+                        <PaginationItem onClick={()=>changePage((postsDetails.pageNo)+1,2)} disabled={postsDetails?.lastPage}>
+                            <PaginationLink next>
+                                Next
+                                </PaginationLink>
+                        </PaginationItem>
+
+                    </Pagination>
+                    </Container>
+                   
+                </Col>
+            </Row>
+        </div>
+  )
+}
+
+export default NewFeed
